@@ -34,37 +34,81 @@ final class FtpAuthentication
     private $password = null;
 
     /**
+     * The connection with the server
      *
-     * @var FtpModel
+     * @var resource
      */
-    private $ftp;
+    private $conn;
+
 
     /**
-     * @param FtpModel $ftp
+     * @return the $conn
+     */
+    public function getConn()
+    {
+        return $this->conn;
+    }
+
+    /**
      * @param resource $stream
      * @param string $username
      * @param string $password
      * @throws FtpAuthenticationException
      */
-    public function __construct(FtpModel $ftp, $stream, string $username, string $password)
+    public function __construct()
     {
-
-         if (empty($stream) || \is_null($stream)) {
-             throw new FtpAuthenticationException('Missing stream.');
-         }
-
-        if (empty($username) || \is_null($username)) {
-            throw new FtpAuthenticationException('Missing username.');
+        $extMessage = 'FTP extension is not loaded!, please check it.';
+        if (! extension_loaded('ftp')) {
+            throw new FtpException($extMessage);
         }
+    }
 
-        if (empty($password) || \is_null($password)) {
-            throw new FtpAuthenticationException('Missing password.');
-        }
+    /**
+     * @return the $stream
+     */
+    public function getStream()
+    {
+        return $this->stream;
+    }
 
+    /**
+     * @return the $username
+     */
+    public function getUsername()
+    {
+        return $this->username;
+    }
+
+    /**
+     * @return the $password
+     */
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * @param resource $stream
+     */
+    public function setStream($stream)
+    {
         $this->stream = $stream;
+    }
+
+    /**
+     * @param string $username
+     */
+    public function setUsername($username)
+    {
         $this->username = $username;
+    }
+
+    /**
+     * @param string $password
+     */
+    public function setPassword($password)
+    {
         $this->password = $password;
-        $this->ftp = $ftp;
     }
 
     /**
@@ -72,10 +116,10 @@ final class FtpAuthentication
      * @throws FtpException
      * @return \Zend\Ftp\FtpAuthentication
      */
-    public function login()
+    protected function login()
     {
         try {
-            $result = $this->ftp->login($this->stream,$this->username, $this->password);
+            $result = ftp_login($this->conn,$this->username, $this->password);
 
             if ($result === false) {
                 throw new FtpAuthenticationException('Login incorrect');
@@ -85,6 +129,70 @@ final class FtpAuthentication
             error_log($e->getMessage() . PHP_EOL . $e->getFile(). PHP_EOL);
             throw new FtpAuthenticationException($e->getMessage() . PHP_EOL . $e->getFile(). PHP_EOL);
         }
-        return $this;
+        return $result;
+    }
+
+    /**
+     * Opens a FTP connection ssl by default
+     *
+     * @param int $port
+     * @param int $timeout
+     * @param bool $connSSL
+     * @throws FtpException
+     * @return resource
+     */
+    public function connect(int $port = 21, int $timeout = 90, bool $connSSL = true)
+    {
+
+        try {
+            /* checkParameters*/
+            $this->checkParameters($port,$timeout,$connSSL);
+
+            /* connection to the server */
+            if ($connSSL) {
+                $this->conn = ftp_ssl_connect($this->stream, $port, $timeout);
+            } else {
+                $this->conn = ftp_connect($this->stream, $port, $timeout);
+            }
+
+            if ($this->conn) {
+                $this->login();
+            }
+        } catch (\Exception $e) {
+            error_log($e->getMessage() . PHP_EOL . $e->getFile() . PHP_EOL);
+            throw new FtpException($e->getMessage());
+        }
+    }
+
+    /**
+     * checkParameters
+     *
+     * @param int $port
+     * @param int $timeout
+     * @param bool $connSSL
+     * @throws FtpException
+     */
+    private function checkParameters(int $port,int $timeout,bool $connSSL)
+    {
+        /* string $host parameter */
+        if (empty($this->stream) || \is_null($this->stream)) {
+            throw new FtpException('Missing host?');
+        }
+        /* int $port parameter */
+        if (empty($port) || \is_null($port)) {
+            throw new FtpException('Missing port?');
+        }
+        /* int $timeout parameter */
+        if (empty($timeout) || \is_null($timeout)) {
+            throw new FtpException('Missing timeout?');
+        }
+        /* bool $connSSL parameter */
+        if (empty($connSSL) || \is_null($connSSL)) {
+            throw new FtpException('Missing ssl?');
+        }
+    }
+
+    public function close(){
+        return ftp_close($this->conn);
     }
 }

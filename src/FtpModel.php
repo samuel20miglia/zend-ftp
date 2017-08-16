@@ -9,7 +9,7 @@ use Zend\Ftp\Exception\FtpException;
  * @author samuel ventimiglia
  *
  */
-final class FtpModel
+class FtpModel implements \Countable
 {
 
     /**
@@ -17,23 +17,15 @@ final class FtpModel
      *
      * @var FtpModel
      */
-    private $ftp;
+    protected $ftp;
 
-    private $conn;
-
-    public function __construct($conn)
-    {
-        $this->conn = $conn;
-
-    }
-
-     /**
-     * @return the $ftp
+    /**
+     * The connection with the server
+     *
+     * @var resource
      */
-    public function getFtp()
-    {
-        return $this->ftp;
-    }
+    protected $conn;
+
 
     /**
      * Forward the method call to FTP functions
@@ -78,7 +70,7 @@ final class FtpModel
      */
     public function help()
     {
-        return $this->ftp->raw($this->conn,'help');
+        return $this->raw('help');
     }
 
     /**
@@ -92,7 +84,7 @@ final class FtpModel
      */
     public function modifiedTime($remoteFile, $format = null)
     {
-        $time = $this->ftp->mdtm($remoteFile);
+        $time = $this->mdtm($remoteFile);
         if ($time !== -1 && $format !== null) {
             return date($format, $time);
         }
@@ -106,7 +98,7 @@ final class FtpModel
      */
     public function up()
     {
-        $result = @$this->ftp->cdup();
+        $result = @$this->cdup();
         if ($result === false) {
             throw new FtpException('Unable to get parent folder');
         }
@@ -133,7 +125,7 @@ final class FtpModel
         if (!$this->isDir($directory)) {
             throw new FtpException('"'.$directory.'" is not a directory');
         }
-        $files = $this->ftp->nlist($directory);
+        $files = $this->nlist($directory);
         if ($files === false) {
             throw new FtpException('Unable to list directory');
         }
@@ -202,21 +194,21 @@ final class FtpModel
     public function mkdir($directory, $recursive = false)
     {
         if (!$recursive or $this->isDir($directory)) {
-            return $this->ftp->mkdir($directory);
+            return $this->mkdir($directory);
         }
         $result = false;
-        $pwd    = $this->ftp->pwd();
+        $pwd    = $this->pwd();
         $parts  = explode('/', $directory);
         foreach ($parts as $part) {
             if ($part == '') {
                 continue;
             }
-            if (!@$this->ftp->chdir($part)) {
-                $result = $this->ftp->mkdir($part);
-                $this->ftp->chdir($part);
+            if (!@$this->chdir($part)) {
+                $result = $this->mkdir($part);
+                $this->chdir($part);
             }
         }
-        $this->ftp->chdir($pwd);
+        $this->chdir($pwd);
         return $result;
     }
     /**
@@ -277,7 +269,7 @@ final class FtpModel
     public function remove($path, $recursive = false)
     {
         try {
-            if (@$this->ftp->delete($path)
+            if (@$this->delete($path)
                 or ($this->isDir($path) and @$this->rmdir($path, $recursive))) {
                     return true;
                 }
@@ -295,15 +287,15 @@ final class FtpModel
      */
     public function isDir($directory)
     {
-        $pwd = $this->ftp->pwd();
+        $pwd = $this->pwd();
         if ($pwd === false) {
             throw new FtpException('Unable to resolve the current directory');
         }
-        if (@$this->ftp->chdir($directory)) {
-            $this->ftp->chdir($pwd);
+        if (@$this->chdir($directory)) {
+            $this->chdir($pwd);
             return true;
         }
-        $this->ftp->chdir($pwd);
+        $this->chdir($pwd);
         return false;
     }
     /**
@@ -380,7 +372,7 @@ final class FtpModel
         $handle = fopen('php://temp', 'w');
         fwrite($handle, $content);
         rewind($handle);
-        if ($this->ftp->fput($remote_file, $handle, FTP_BINARY)) {
+        if ($this->fput($remote_file, $handle, FTP_BINARY)) {
             return $this;
         }
         throw new FtpException('Unable to put the file "'.$remote_file.'"');
@@ -396,7 +388,7 @@ final class FtpModel
     {
         $remote_file = basename($local_file);
         $handle      = fopen($local_file, 'r');
-        if ($this->ftp->fput($remote_file, $handle, FTP_BINARY)) {
+        if ($this->fput($remote_file, $handle, FTP_BINARY)) {
             rewind($handle);
             return $this;
         }
@@ -423,7 +415,7 @@ final class FtpModel
                 if (is_dir($source_directory.'/'.$file)) {
                     if (!$this->isDir($target_directory.'/'.$file)) {
                         // create directories that do not yet exist
-                        $this->ftp->mkdir($target_directory.'/'.$file);
+                        $this->mkdir($target_directory.'/'.$file);
                     }
                     // recursive part
                     $this->putAll(
@@ -432,7 +424,7 @@ final class FtpModel
                         );
                 } else {
                     // put the files
-                    $this->ftp->put(
+                    $this->put(
                         $target_directory.'/'.$file, $source_directory.'/'.$file,
                         $mode
                         );
@@ -457,7 +449,7 @@ final class FtpModel
         if (!$this->isDir($directory)) {
             throw new FtpException('"'.$directory.'" is not a directory.');
         }
-        $list  = $this->ftp->rawlist($directory);
+        $list  = $this->rawlist($directory);
         $items = array();
         if (!$list) {
             return $items;
@@ -607,5 +599,4 @@ final class FtpModel
                 return 'unknown';
         }
     }
-
 }
