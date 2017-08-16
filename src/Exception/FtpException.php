@@ -3,10 +3,11 @@ namespace Zend\Ftp\Exception;
 
 /**
  *
- * @author ghostbyte
- *
+ * @author Ventimiglia Samuel
+ * @since 2017/08/16
+ * @version 0.0.1
  */
-class FtpException
+class FtpException implements ExceptionInterface
 {
 }
 
