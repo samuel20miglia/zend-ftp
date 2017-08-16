@@ -17,7 +17,7 @@ final class FtpAuthentication
 {
     /**
      *
-     * @var string
+     * @var resource
      */
     private $stream = null;
 
@@ -35,17 +35,23 @@ final class FtpAuthentication
 
     /**
      *
-     * @param string $stream
+     * @var FtpModel
+     */
+    private $ftp;
+
+    /**
+     * @param FtpModel $ftp
+     * @param resource $stream
      * @param string $username
      * @param string $password
      * @throws FtpAuthenticationException
      */
-    public function __construct(string $stream, string $username, string $password)
+    public function __construct(FtpModel $ftp, $stream, string $username, string $password)
     {
-        $extMessage = 'FTP extension is not loaded!, please check it.';
-        if (!extension_loaded('ftp')) {
-            throw new FtpException($extMessage);
-        }
+
+         if (empty($stream) || \is_null($stream)) {
+             throw new FtpAuthenticationException('Missing stream.');
+         }
 
         if (empty($username) || \is_null($username)) {
             throw new FtpAuthenticationException('Missing username.');
@@ -54,24 +60,30 @@ final class FtpAuthentication
         if (empty($password) || \is_null($password)) {
             throw new FtpAuthenticationException('Missing password.');
         }
+
+        $this->stream = $stream;
+        $this->username = $username;
+        $this->password = $password;
+        $this->ftp = $ftp;
     }
 
     /**
-     *
+     * Login
      * @throws FtpException
      * @return \Zend\Ftp\FtpAuthentication
      */
-    private function login()
+    public function login()
     {
         try {
-            $result = $this->ftp->login($this->username, $this->password);
+            $result = $this->ftp->login($this->stream,$this->username, $this->password);
 
             if ($result === false) {
-                throw new FtpException('Login incorrect');
+                throw new FtpAuthenticationException('Login incorrect');
             }
 
         } catch (\Exception $e) {
             error_log($e->getMessage() . PHP_EOL . $e->getFile(). PHP_EOL);
+            throw new FtpAuthenticationException($e->getMessage() . PHP_EOL . $e->getFile(). PHP_EOL);
         }
         return $this;
     }

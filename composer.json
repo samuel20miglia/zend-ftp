@@ -32,5 +32,12 @@
 		"test-coverage" : "phpunit --colors=always --coverage-clover clover.xml",
 		"upload-coverage" : "coveralls -v"
 	},
-	"minimum-stability" : "dev"
+	"minimum-stability" : "dev",
+	"authors" : [{
+			"name" : "Samuel Ventimiglia",
+			"email" : "info@samuelventimiglia.it",
+			"homepage" : "http://samuelventimiglia.it",
+			"role" : "Owner - maintainer"
+		}
+	]
 }
