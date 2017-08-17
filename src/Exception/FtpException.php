@@ -7,7 +7,7 @@ namespace Zend\Ftp\Exception;
  * @since 2017/08/16
  * @version 0.0.1
  */
-class FtpException implements ExceptionInterface
+class FtpException extends \RuntimeException
 {
 }
 
