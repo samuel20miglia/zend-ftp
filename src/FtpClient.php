@@ -28,6 +28,9 @@ final class FtpClient extends FtpModel
         $this->auth = $auth;
         $this->conn = $auth->getConn();
 
+        if (!is_resource($this->conn)){
+            throw new FtpException('Connection lost.');
+        }
     }
 
     /**

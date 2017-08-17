@@ -39,7 +39,7 @@ class FtpModel implements \Countable
     {
         $function = 'ftp_' . $function;
         if (function_exists($function)) {
-            array_unshift($arguments, $this->conn);
+            //array_unshift($arguments, $this->conn);
             return call_user_func_array($function, $arguments);
         }
         throw new FtpException("{$function} is not a valid FTP function");
@@ -70,7 +70,7 @@ class FtpModel implements \Countable
      */
     public function help()
     {
-        return $this->raw('help');
+        return $this->raw($this->conn,'help');
     }
 
     /**
